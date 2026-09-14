@@ -1,0 +1,7 @@
+# Ignore build and simulation files
+tb/sim_build/
+tb/__pycache__/
+tb/annotated_src/
+tb/*.log
+tb/*.xml
+tb/*.dat
