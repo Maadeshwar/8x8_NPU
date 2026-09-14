@@ -3,8 +3,9 @@
 # Parameterized NxN NPU
 
 <img src="https://img.shields.io/badge/Hardware-Verilog-blue?style=for-the-badge" alt="Verilog" />
-<img src="https://img.shields.io/badge/Verification-Cocotb-green?style=for-the-badge" alt="Cocotb" />
-<img src="https://img.shields.io/badge/License-Open%20Source-orange?style=for-the-badge" alt="Open Source" />
+<img src="https://img.shields.io/badge/Architecture-Systolic%20Array-blueviolet?style=for-the-badge" alt="Systolic Array" />
+<img src="https://img.shields.io/badge/Dataflow-Weight%20Stationary-ff69b4?style=for-the-badge" alt="Weight Stationary" />
+<img src="https://img.shields.io/badge/Precision-INT8%2FINT32-orange?style=for-the-badge" alt="INT8/INT32" />
 <img src="https://img.shields.io/badge/Status-Verified-success?style=for-the-badge" alt="Verified" />
 
 <br/>
@@ -75,7 +76,4 @@ To run the strict RTL linting:
 
 *(Note: If you are on Windows, you can run Verilator via WSL using `wsl verilator --lint-only -Wall rtl/*.v`)*
 
-<div align="center">
-  <br/>
-  <img src="https://img.shields.io/badge/Open%20Source-For%20The%20Community-purple?style=flat-square" alt="Open Source" />
-</div>
+
