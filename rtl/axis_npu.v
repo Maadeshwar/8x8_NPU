@@ -55,7 +55,7 @@ module axis_npu #(
     wire                    unskew_valid;
 
     // Skew logic
-    skew_buffer #(
+    axis_skew_buffer #(
         .N(N),
         .DATA_WIDTH(DATA_WIDTH)
     ) act_skew (
@@ -84,7 +84,7 @@ module axis_npu #(
     );
 
     // Unskew logic
-    unskew_buffer #(
+    axis_unskew_buffer #(
         .N(N),
         .DATA_WIDTH(ACC_WIDTH)
     ) psum_unskew (

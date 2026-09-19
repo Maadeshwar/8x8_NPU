@@ -1,6 +1,6 @@
 `default_nettype none
 
-module skew_buffer #(
+module axis_skew_buffer #(
     parameter N = 8,
     parameter DATA_WIDTH = 8
 )(
@@ -35,7 +35,7 @@ module skew_buffer #(
     endgenerate
 endmodule
 
-module unskew_buffer #(
+module axis_unskew_buffer #(
     parameter N = 8,
     parameter DATA_WIDTH = 32
 )(
