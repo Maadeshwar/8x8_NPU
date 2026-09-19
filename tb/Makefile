@@ -2,7 +2,6 @@ SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
 
 # Use relative paths to avoid GNU Make splitting the absolute path on the space in "8x8 NPU"
-VERILOG_SOURCES += ../rtl/npu_defines.sv
 VERILOG_SOURCES += ../rtl/pe.v
 VERILOG_SOURCES += ../rtl/systolic_array.v
 VERILOG_SOURCES += ../rtl/skew_buffers.v

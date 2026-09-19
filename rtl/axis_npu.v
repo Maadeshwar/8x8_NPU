@@ -1,11 +1,12 @@
 `default_nettype none
 
-`include "npu_defines.sv"
-
+// AXI4-Stream Top-Level Wrapper for the Systolic NPU
+// Users only need to instantiate this module and set N/DATA_WIDTH/ACC_WIDTH.
+// The internal files (pe.v, systolic_array.v, skew_buffers.v) never need to change.
 module axis_npu #(
-    parameter N = `NPU_DIM,
-    parameter DATA_WIDTH = `NPU_DATA_WIDTH,
-    parameter ACC_WIDTH = `NPU_ACC_WIDTH
+    parameter N = 8,           // Array dimension (NxN grid of PEs)
+    parameter DATA_WIDTH = 8,  // Bit-width of input activations and weights
+    parameter ACC_WIDTH = 32   // Bit-width of accumulated partial sums
 )(
     input  wire                               clk,
     input  wire                               rst_n,
