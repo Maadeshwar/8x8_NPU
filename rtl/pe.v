@@ -40,6 +40,10 @@ module pe #(
             end else begin
                 act_out    <= act_in;
                 psum_out   <= add_res;
+`ifdef TRACE_NPU
+                $display("[%0t] PE MAC: act_in=%x weight=%x psum_in=%x -> psum_out=%x", 
+                         $time, act_in, weight_reg, psum_in, add_res);
+`endif
             end
         end
     end
