@@ -23,9 +23,9 @@ module pe #(
     wire signed [DATA_WIDTH-1:0] s_weight = $signed(weight_reg);
     wire signed [ACC_WIDTH-1:0] s_psum = $signed(psum_in);
 
-    // MAC operation
-    wire signed [ACC_WIDTH-1:0] mult_res = s_act * s_weight;
-    wire signed [ACC_WIDTH-1:0] add_res = mult_res + s_psum;
+    // MAC operation (force inference into DSP slices for max speed)
+    (* use_dsp = "yes" *) wire signed [ACC_WIDTH-1:0] mult_res = s_act * s_weight;
+    (* use_dsp = "yes" *) wire signed [ACC_WIDTH-1:0] add_res = mult_res + s_psum;
 
     always @(posedge clk) begin
         if (!rst_n) begin
