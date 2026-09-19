@@ -19,7 +19,7 @@ module skew_buffer #(
             end else begin
                 reg [DATA_WIDTH-1:0] shift_reg [0:i-1];
                 integer j_idx;
-                always @(posedge clk or negedge rst_n) begin
+                always @(posedge clk) begin
                     if (!rst_n) begin
                         for (j_idx = 0; j_idx < i; j_idx = j_idx + 1) shift_reg[j_idx] <= 0;
                     end else if (en) begin
@@ -50,7 +50,7 @@ module unskew_buffer #(
 
     // Track valid pipeline
     reg [2*N-2:0] valid_shift;
-    always @(posedge clk or negedge rst_n) begin
+    always @(posedge clk) begin
         if (!rst_n) valid_shift <= 0;
         else if (en) valid_shift <= {valid_shift[2*N-3:0], valid_in};
     end
@@ -65,7 +65,7 @@ module unskew_buffer #(
             end else begin
                 reg [DATA_WIDTH-1:0] shift_reg [0:DELAY-1];
                 integer j_idx;
-                always @(posedge clk or negedge rst_n) begin
+                always @(posedge clk) begin
                     if (!rst_n) begin
                         for (j_idx = 0; j_idx < DELAY; j_idx = j_idx + 1) shift_reg[j_idx] <= 0;
                     end else if (en) begin

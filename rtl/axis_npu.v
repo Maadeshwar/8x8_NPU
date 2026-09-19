@@ -107,7 +107,7 @@ module axis_npu #(
     // TLAST logic for output
     // The pipeline latency from input tlast to output tlast is exactly 2N-2 cycles.
     reg [2*N-2:0] tlast_shift;
-    always @(posedge clk or negedge rst_n) begin
+    always @(posedge clk) begin
         if (!rst_n) tlast_shift <= 0;
         else if (array_en && !array_load) tlast_shift <= {tlast_shift[2*N-3:0], (a_fire && s_axis_a_tlast)};
         else tlast_shift <= {tlast_shift[2*N-3:0], 1'b0};
@@ -115,7 +115,7 @@ module axis_npu #(
     assign m_axis_out_tlast = tlast_shift[2*N-2];
 
     // FSM
-    always @(posedge clk or negedge rst_n) begin
+    always @(posedge clk) begin
         if (!rst_n) begin
             state <= STATE_IDLE;
             flush_counter <= 0;
