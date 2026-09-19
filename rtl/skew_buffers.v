@@ -1,5 +1,7 @@
 `default_nettype none
 
+/* verilator lint_off DECLFILENAME */
+
 module axis_skew_buffer #(
     parameter N = 8,
     parameter DATA_WIDTH = 8
@@ -11,13 +13,13 @@ module axis_skew_buffer #(
     output wire [N*DATA_WIDTH-1:0]  data_out
 );
 
-    genvar i, j;
+    genvar i;
     generate
         for (i = 0; i < N; i = i + 1) begin : gen_skew
-            if (i == 0) begin
-                assign data_out[0 +: DATA_WIDTH] = data_in[0 +: DATA_WIDTH];
-            end else begin
-                reg [DATA_WIDTH-1:0] shift_reg [0:i-1];
+            if (i == 0) begin : gen_no_delay
+                assign data_out[i*DATA_WIDTH +: DATA_WIDTH] = data_in[i*DATA_WIDTH +: DATA_WIDTH];
+            end else begin : gen_delay
+                reg [DATA_WIDTH-1:0] shift_reg [i-1:0];
                 integer j_idx;
                 always @(posedge clk) begin
                     if (!rst_n) begin
@@ -55,15 +57,14 @@ module axis_unskew_buffer #(
         else if (en) valid_shift <= {valid_shift[2*N-3:0], valid_in};
     end
     assign valid_out = valid_shift[2*N-2];
-
-    genvar i, j;
+    genvar i;
     generate
         for (i = 0; i < N; i = i + 1) begin : gen_unskew
             localparam DELAY = N - 1 - i;
-            if (DELAY == 0) begin
+            if (DELAY == 0) begin : gen_no_delay
                 assign data_out[i*DATA_WIDTH +: DATA_WIDTH] = data_in[i*DATA_WIDTH +: DATA_WIDTH];
-            end else begin
-                reg [DATA_WIDTH-1:0] shift_reg [0:DELAY-1];
+            end else begin : gen_delay
+                reg [DATA_WIDTH-1:0] shift_reg [DELAY-1:0];
                 integer j_idx;
                 always @(posedge clk) begin
                     if (!rst_n) begin

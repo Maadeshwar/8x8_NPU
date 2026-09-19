@@ -40,9 +40,7 @@ module axis_npu #(
     reg [6:0] flush_counter, next_flush_counter;
 
     // Handshakes
-    wire w_fire = s_axis_w_tvalid && s_axis_w_tready;
     wire a_fire = s_axis_a_tvalid && s_axis_a_tready;
-    wire out_fire = m_axis_out_tvalid && m_axis_out_tready;
 
     // Array signals
     reg array_en;
@@ -67,6 +65,7 @@ module axis_npu #(
     );
 
     // Systolic array
+    /* verilator lint_off PINCONNECTEMPTY */
     systolic_array #(
         .N(N),
         .DATA_WIDTH(DATA_WIDTH),
@@ -82,6 +81,7 @@ module axis_npu #(
         .act_out(),
         .psum_out(array_psum_out)
     );
+    /* verilator lint_on PINCONNECTEMPTY */
 
     // Unskew logic
     axis_unskew_buffer #(
