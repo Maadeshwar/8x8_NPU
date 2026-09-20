@@ -1,56 +1,87 @@
-# Configurable Neural Processing Unit (NPU) IP
+﻿<h1 align="center">Configurable Neural Processing Unit (NPU) IP</h1>
 
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Build: Passing](https://img.shields.io/badge/Build-Passing-brightgreen.svg)
-![Coverage: 100%](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg)
+<p align="center">
+  <img src="https://img.shields.io/badge/Language-Verilog_2001-007ACC?style=for-the-badge" alt="Verilog">
+  <img src="https://img.shields.io/badge/Architecture-Systolic_Array-FF3366?style=for-the-badge" alt="Architecture">
+  <img src="https://img.shields.io/badge/Control-3_Stage_FSM-FF9900?style=for-the-badge" alt="FSM">
+  <img src="https://img.shields.io/badge/Integration-Memory_Mapped-9C27B0?style=for-the-badge" alt="Memory Mapped">
+  <img src="https://img.shields.io/badge/Verification-Cocotb_%26_Verilator-4B32C3?style=for-the-badge" alt="Verification">
+  <img src="https://img.shields.io/badge/Status-Production_Grade-00C853?style=for-the-badge" alt="Status">
+</p>
 
-A high-performance, fully parameterized, production-grade **Neural Processing Unit (NPU)** written in Verilog. Designed as a standalone Intellectual Property (IP) block, this NPU is built around a parameterized NxN Systolic Array and natively executes complete Convolutional Neural Network (CNN) layers in a single hardware pass.
+---
 
-## ✨ Key Features
-* **Universally Parameterized:** Completely scalable NxN systolic grid. Scale from a tiny edge 8x8 accelerator to a massive datacenter 32x32 array simply by altering parameter N.
-* **Native Bias Addition (A*B + C):** Built-in Partial Sum Buffer (PBUF) allows the CPU to preload bias vectors. The NPU natively reads and accumulates bias with matrix multiplication results on the fly.
-* **Hardware Activation & Downsampling:** Native inline hardware modules for **ReLU** activation and **2x2 Max Pooling**.
-* **Quantization Engine:** Integrated shifting arithmetic to handle Post-Training Quantization (PTQ) scaling.
-* **Autonomous Matrix Tiling:** Automatically handles large matrix operations that exceed physical hardware limits via a multi-pass accumulator pipeline.
-* **Zero-Protocol Memory Mapped Interface:** Abstracted standard SRAM interfaces (ddr, data, we) eliminate the need for heavy AXI-wrappers internally, allowing plug-and-play integration into any SoC bus (AXI, Avalon, Wishbone).
+<h2 align="center">Architectural Overview</h2>
 
-## 🧠 Core Architecture
+This repository contains a high-performance, fully parameterized, production-grade Neural Processing Unit (NPU) Intellectual Property (IP) block. The architecture is engineered around a highly scalable NxN Systolic Array capable of natively executing complete Convolutional Neural Network (CNN) layers, including matrix multiplication, bias addition, non-linear activation, and spatial downsampling, entirely in a single hardware pass.
 
-The architecture abstracts the terrifying complexity of systolic array timing (data skewing, unskewing, and partial sum accumulation) behind a clean, memory-mapped command interface. 
+Designed for seamless System-on-Chip (SoC) integration, the NPU completely abstracts the complex timing constraints of systolic data skewing and unskewing behind a localized, autonomous controller and standard memory-mapped SRAM interfaces.
 
-### The 3-Stage FSM Controller
-The heart of the NPU's intelligence is the layer_controller.v. It relies on a rigorous, highly optimized **3-Stage Finite State Machine (FSM)**:
-1. **IDLE (State 0):** The NPU rests, waiting for a command via the asynchronous Command FIFO. It allows the CPU to safely load data into IBUF, WBUF, and PBUF via DMA.
-2. **LOAD_WEIGHT (State 1):** The controller autonomously generates SRAM addresses to fetch matrices from the Weight Buffer (WBUF) and pushes them into the physical processing elements (PEs) of the systolic array.
-3. **RUN_MAC (State 2):** The controller streams Input Activations (IBUF) into the array, activates the mathematical pipeline, and dynamically orchestrates the PBUF for bias accumulation, passing the final unskewed results through the ReLU/Pooling blocks into the Output Buffer (OBUF).
+---
 
-### Internal Memory Hierarchy
-* **IBUF (Input Buffer):** Stores input activations or flattened image data (im2col).
-* **WBUF (Weight Buffer):** Stores convolutional kernels or dense weight matrices.
-* **PBUF (Partial-Sum / Bias Buffer):** Stores intermediate MAC calculations during tiling, or pre-loaded Bias vectors (C).
-* **OBUF (Output Buffer):** Stores the final scaled, activated, and pooled output tensors.
+<h2 align="center">Core Subsystems and Features</h2>
 
-## 🧪 Verification Methodology
+<h3 align="center">1. Parameterized Systolic Math Engine</h3>
+The mathematical core of the NPU is a highly optimized, output-stationary Systolic Array. 
+* **Universal Scalability:** The array size is driven by a top-level parameter N. Instantiating the IP as a lightweight 8x8 edge accelerator or a massive 32x32 datacenter engine requires zero code rewrites. 
+* **Data Width Flexibility:** Features configurable DATA_WIDTH (default 8-bit integer) and ACC_WIDTH (default 32-bit internal accumulator) for precision control during inference.
 
-This NPU is verified using a rigorous, production-grade **Python/Cocotb** regression suite running on **Verilator**.
+<h3 align="center">2. The 3-Stage FSM Layer Controller</h3>
+At the heart of the NPU's intelligence lies a rigorous, zero-overhead **3-Stage Finite State Machine (FSM)**. This controller replaces legacy hardware wrappers by directly orchestrating internal SRAM reads, array enablement, and pipeline alignment.
+* **Stage 0 [IDLE]:** The controller rests in a low-power state, continuously polling the asynchronous Command FIFO. During this stage, the external CPU or DMA has uncontested write access to the memory buffers.
+* **Stage 1 [LOAD_WEIGHT]:** Upon receiving an OP_LOAD_WEIGHTS command, the FSM autonomously generates sequential read addresses for the Weight Buffer (WBUF), streaming the kernel data directly into the physical Processing Elements (PEs) of the systolic array to lock the weights in place.
+* **Stage 2 [RUN_MAC]:** Triggered by an OP_RUN_MAC command, the FSM enters the execution state. It coordinates the reading of Input Activations (IBUF), manages the latency of the data skewing buffers, drives the partial sum accumulation, and triggers the write-back process to the Output Buffer (OBUF).
 
-* **Golden Model Comparison:** Every Verilog test dynamically generates random matrices, passes them through an exact Python Numpy equivalent model (dot product, clip, maximum), and asserts cycle-accurate bit-matching against the hardware OBUF.
-* **100% Feature Coverage:** The automated testbench validates 8 extreme edge cases: Identity Matrices, Zeros, Maximum Thresholds, Checkerboard Patterns, ReLU truncation, PTQ Scaling, and 2x2 Max Pooling logic.
+<h3 align="center">3. Native Hardware Post-Processing</h3>
+Instead of relying on the CPU to perform post-processing on raw matrix multiplication outputs, the NPU pipeline natively integrates highly optimized post-processing modules.
+* **Bias Addition:** The Partial Sum Buffer (PBUF) exposes a CPU write interface, allowing bias vectors to be pre-loaded into memory. During the RUN_MAC stage, the hardware simultaneously fetches the bias and accumulates it with the incoming matrix dot-product.
+* **Activation:** A dedicated inline module computes **ReLU** (Rectified Linear Unit) activation, instantly clamping negative partial sums to zero.
+* **Downsampling:** A dedicated **2x2 Max Pooling** module physically captures consecutive matrix rows, multiplexes the highest values, and downsamples the output resolution in real-time before writing to the OBUF.
+* **Quantization Scaling:** An integrated barrel shifter truncates the 32-bit accumulated output back down to 8-bit representations, allowing for int8 Post-Training Quantization (PTQ) compatibility.
 
-## 🚀 How to Integrate
+---
 
-Simply instantiate 
-pu_top.v in your SoC and connect the memory-mapped SRAM pins to your system bus. 
+<h2 align="center">Memory Hierarchy and Integration</h2>
 
-`erilog
-npu_top #(
-    .N(8),            // Configure your Array Size
-    .DATA_WIDTH(8),    // 8-bit Integer Quantized Weights/Activations
-    .ACC_WIDTH(32)     // 32-bit Internal Accumulator
-) i_npu (
-    .clk(system_clk), 
-    .rst_n(system_rst),
-    // Route cmd_in, cmd_push to your CPU
-    // Route ibuf/wbuf/pbuf/obuf pins to your DMA or CPU Memory Map
-);
-`
+The NPU eliminates the requirement for heavy proprietary bus wrappers (like AXI4 or Avalon) internally. Instead, it utilizes standard, universally understood SRAM pinouts (addr, data, we), making it effortlessly compatible with any system architecture.
+
+<h3 align="center">Buffer Architecture</h3>
+
+* **IBUF (Input Buffer):** Stores the input activation tensors. For Convolutional layers, software flattens the image using im2col before transferring to IBUF.
+* **WBUF (Weight Buffer):** Stores the dense weight matrices or flattened convolutional kernels.
+* **PBUF (Partial Sum Buffer):** A deep 32-bit memory buffer used to store multi-pass Matrix Tiling intermediate results, or to preload Bias vectors.
+* **OBUF (Output Buffer):** A read-only buffer containing the final processed tensors for the CPU to read back.
+* **Command FIFO:** An asynchronous 32-bit ring buffer where the CPU pushes operational opcodes.
+
+<h3 align="center">Command Packet Structure</h3>
+
+The CPU controls the NPU by pushing 32-bit packets into the Command FIFO.
+* [31:28] - **Opcode:** 1 (Load Weights), 2 (Run MAC), 3 (Set Tiler)
+* [27:0]  - **Payload:** For RUN_MAC, the payload dictates execution parameters:
+  * [27] - **Accumulate Enable:** If high, adds the contents of PBUF to the array output (used for Bias or Tiling).
+  * [26] - **Finish Pass:** If high, routes the output through Quantization, ReLU, and Pooling before writing to OBUF.
+  * [25:0] - **Cycles:** The number of rows to process in the current execution block.
+
+---
+
+<h2 align="center">Verification Rigor</h2>
+
+To guarantee mathematical perfection and production-grade stability, this NPU is verified via a state-of-the-art **Python/Cocotb** framework running on the **Verilator** cycle-accurate simulator.
+
+<h3 align="center">Automated Testbench Coverage</h3>
+Every physical hardware pass is dynamically compared against a custom Python numpy Golden Model. The automated suite asserts 100% bit-accurate matching across a gauntlet of extreme edge cases:
+1. **Identity Matrices:** Verifies baseline matrix-vector alignment.
+2. **Zeros:** Verifies truncation and reset states.
+3. **Randomized Data:** Verifies standard dot-product functionality.
+4. **Checkerboard Patterns:** Verifies alternating bit-flip stability.
+5. **Maximum Values:** Verifies accumulator overflow resistance and saturation.
+6. **ReLU Assertions:** Verifies negative integer clamping.
+7. **Quantization Precision:** Verifies dynamic bit-shifting math.
+8. **Max Pooling Isolation:** Verifies spatial 2x2 comparison logic.
+
+---
+
+<h2 align="center">Repository File Structure</h2>
+
+* /rtl/ - The pure Verilog-2001 source files for the NPU. npu_top.v is the highest-level module.
+* /tb/ - The Cocotb Python verification environment, Golden Models, and Makefile.
