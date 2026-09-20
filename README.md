@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Precision-INT8_Weights_%2F_Activations-9C27B0?style=for-the-badge" alt="INT8">
   <img src="https://img.shields.io/badge/Accumulator-INT32_Partial_Sums-4B32C3?style=for-the-badge" alt="INT32">
   <img src="https://img.shields.io/badge/Activation-Hardware_ReLU-FF9900?style=for-the-badge" alt="ReLU">
-  <img src="https://img.shields.io/badge/Downsampling-2x2_Max_Pool-E91E63?style=for-the-badge" alt="Pooling">
+  <img src="https://img.shields.io/badge/Downsampling-2x2_Max_Pool-00FF00?style=for-the-badge" alt="Pooling">
   <img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge" alt="License">
 </p>
 
