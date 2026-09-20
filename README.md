@@ -1,11 +1,12 @@
 ﻿<h1 align="center">Configurable Neural Processing Unit (NPU)</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Language-Verilog_2001-007ACC?style=for-the-badge" alt="Verilog">
   <img src="https://img.shields.io/badge/Architecture-Systolic_Array-FF3366?style=for-the-badge" alt="Architecture">
-  <img src="https://img.shields.io/badge/Integration-Memory_Mapped-9C27B0?style=for-the-badge" alt="Memory Mapped">
-  <img src="https://img.shields.io/badge/Verification-Cocotb_%26_Verilator-4B32C3?style=for-the-badge" alt="Verification">
-  <img src="https://img.shields.io/badge/Status-Production_Grade-00C853?style=for-the-badge" alt="Status">
+  <img src="https://img.shields.io/badge/Topology-Output_Stationary-007ACC?style=for-the-badge" alt="Topology">
+  <img src="https://img.shields.io/badge/Precision-INT8_Weights_%2F_Activations-9C27B0?style=for-the-badge" alt="INT8">
+  <img src="https://img.shields.io/badge/Accumulator-INT32_Partial_Sums-4B32C3?style=for-the-badge" alt="INT32">
+  <img src="https://img.shields.io/badge/Activation-Hardware_ReLU-FF9900?style=for-the-badge" alt="ReLU">
+  <img src="https://img.shields.io/badge/Downsampling-2x2_Max_Pool-E91E63?style=for-the-badge" alt="Pooling">
 </p>
 
 ---
