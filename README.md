@@ -2,7 +2,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Architecture-Systolic_Array-FF3366?style=for-the-badge" alt="Architecture">
-  <img src="https://img.shields.io/badge/Topology-Weight_Stationary-007ACC?style=for-the-badge" alt="Topology">
+  <img src="https://img.shields.io/badge/Topology-Weight_Stationary-FF0000?style=for-the-badge" alt="Topology">
   <img src="https://img.shields.io/badge/Precision-INT8_Weights_%2F_Activations-9C27B0?style=for-the-badge" alt="INT8">
   <img src="https://img.shields.io/badge/Accumulator-INT32_Partial_Sums-4B32C3?style=for-the-badge" alt="INT32">
   <img src="https://img.shields.io/badge/Activation-Hardware_ReLU-FF9900?style=for-the-badge" alt="ReLU">
