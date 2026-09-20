@@ -125,3 +125,31 @@ async def test_identity(dut):
     W = np.eye(N, dtype=np.int8)
     A = np.random.randint(-10, 10, size=(N, N), dtype=np.int8)
     await run_npu_test(dut, W, A)
+
+@cocotb.test()
+async def test_random(dut):
+    N = int(dut.N.value)
+    W = np.random.randint(-128, 127, size=(N, N), dtype=np.int8)
+    A = np.random.randint(-128, 127, size=(N, N), dtype=np.int8)
+    await run_npu_test(dut, W, A)
+
+@cocotb.test()
+async def test_zeros(dut):
+    N = int(dut.N.value)
+    W = np.zeros((N, N), dtype=np.int8)
+    A = np.random.randint(-128, 127, size=(N, N), dtype=np.int8)
+    await run_npu_test(dut, W, A)
+
+@cocotb.test()
+async def test_max_values(dut):
+    N = int(dut.N.value)
+    W = np.full((N, N), 127, dtype=np.int8)
+    A = np.full((N, N), -128, dtype=np.int8)
+    await run_npu_test(dut, W, A)
+
+@cocotb.test()
+async def test_checkerboard(dut):
+    N = int(dut.N.value)
+    W = np.fromfunction(lambda i, j: (i + j) % 2, (N, N)).astype(np.int8) * 127
+    A = np.fromfunction(lambda i, j: (i + j + 1) % 2, (N, N)).astype(np.int8) * 127
+    await run_npu_test(dut, W, A)
