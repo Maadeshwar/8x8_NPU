@@ -26,7 +26,7 @@ flowchart TD
     end
 
     subgraph Control [Control Logic]
-        FSM{3-Stage FSM<br>Layer Controller}
+        FSM{3-State FSM<br>Layer Controller}
     end
 
     subgraph Compute [Datapath]
@@ -48,8 +48,8 @@ flowchart TD
 
 The repository follows strict, production-grade structural Verilog constraints to guarantee timing closure and maintainability.
 
-### 1. The 3-Stage (3-Block) FSM
-The `layer_controller.v` is explicitly engineered using the industry-standard **3-Stage FSM architecture**. This prevents combinational glitches and isolates state tracking from output logic.
+### 1. The 3-State FSM
+The `layer_controller.v` is explicitly engineered using the industry-standard **3-State FSM architecture**. This prevents combinational glitches and isolates state tracking from output logic.
 
 ```verilog
 // STAGE 1: Sequential State Update
@@ -77,7 +77,7 @@ end
 ### 2. Module Hierarchy
 The logic is cleanly modularized. `npu_top.v` orchestrates the entire flow without legacy wrappers:
 * `npu_top.v`
-  * `layer_controller.v` (3-Stage FSM)
+  * `layer_controller.v` (3-State FSM)
   * `sram_buffers.v` (IBUF, WBUF, OBUF)
   * `accumulator_pbuf.v` (Bias Addition)
   * `systolic_array.v` (NxN MAC Engine)
