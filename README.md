@@ -1,18 +1,18 @@
 <div align="center">
 
-# Plug-and-Play Systolic NPU
+# Plug-and-Play Systolic NPU Subsystem
 
 <img src="https://img.shields.io/badge/Hardware-SystemVerilog-blue?style=for-the-badge" alt="SystemVerilog" />
 <img src="https://img.shields.io/badge/Architecture-Systolic%20Array-blueviolet?style=for-the-badge" alt="Systolic Array" />
-<img src="https://img.shields.io/badge/Interface-AXI4--Stream-ff69b4?style=for-the-badge" alt="AXI4-Stream" />
+<img src="https://img.shields.io/badge/Interface-Memory%20Mapped-ff69b4?style=for-the-badge" alt="Memory Mapped" />
 <img src="https://img.shields.io/badge/Precision-INT8%2FINT32-orange?style=for-the-badge" alt="INT8/INT32" />
 <img src="https://img.shields.io/badge/Status-Verified-success?style=for-the-badge" alt="Verified" />
 
 <br/>
 
 <p align="center">
-A fully verified, parameterizable Weight-Stationary Systolic Array designed for edge AI matrix multiplications.<br/>
-Upgraded with AXI4-Stream interfaces and internal hardware skewing for zero-overhead SoC integration.
+A fully verified, parameterizable Weight-Stationary Systolic NPU Subsystem designed for edge AI inference.<br/>
+Features an integrated Layer Controller, internal SRAMs, and a hardware post-processing pipeline for zero-overhead SoC integration.
 </p>
 
 </div>
@@ -24,9 +24,10 @@ Upgraded with AXI4-Stream interfaces and internal hardware skewing for zero-over
 </div>
 
 - **True Systolic Grid**: Data flows cyclically through processing elements (PEs) across both dimensions. No global broadcasting (reduces fan-out and maximizes Fmax).
-- **Internal Pipeline Skewing**: Hardened `skew_buffer` and `unskew_buffer` layers handle the diagonalizing of matrices. The SoC simply streams normal matrices in and out without software-side pre-processing!
-- **Standard AXI4-Stream**: Standardized handshakes (`tvalid`, `tready`, `tdata`, `tlast`) make it trivial to hook this IP up to DMA controllers and bus interconnects.
-- **Parametrizable**: Easily adjustable `N`, `DATA_WIDTH`, and `ACC_WIDTH` via `npu_defines.sv`.
+- **Integrated Control & Storage**: Includes an internal 3-Stage FSM `layer_controller` and tightly coupled SRAMs (`IBUF`, `WBUF`, `OBUF`) to operate completely autonomously from the CPU.
+- **Hardware Tiler**: Nested loop controller allows scheduling entire multi-dimensional tensor operations with a single configuration command.
+- **Post-Processing Pipeline**: Integrated hardware Activation (ReLU), Quantization (8-bit downshift), and a 2x2 Max Pooling unit.
+- **Parametrizable**: Easily adjustable `N`, `DATA_WIDTH`, and `ACC_WIDTH` natively through standard module parameters in `npu_top.v`.
 - **Verified**: Fully tested using Cocotb + Verilator, with 100% functional testbench coverage.
 
 ---
@@ -37,9 +38,11 @@ Upgraded with AXI4-Stream interfaces and internal hardware skewing for zero-over
 
 | Interface | Type | Description |
 |-----------|------|-------------|
-| `s_axis_w` | AXI4-Stream Input | Streams `N` weight vectors to load the stationary PEs. |
-| `s_axis_a` | AXI4-Stream Input | Streams `N` activation vectors to multiply against the weights. |
-| `m_axis_out`| AXI4-Stream Output | Outputs `N` partial sum vectors. |
+| `cmd_in` | 32-bit Command | Hardware FIFO interface for pushing encoded configuration and layer execution commands. |
+| `ibuf_*` | SRAM Write | Exposes the internal Activation Buffer (IBUF) for DMA/CPU preloading. |
+| `wbuf_*` | SRAM Write | Exposes the internal Weight Buffer (WBUF) for DMA/CPU preloading. |
+| `pbuf_*` | SRAM Write | Exposes the 32-bit Partial Sum Accumulator (PBUF) for preloading biases. |
+| `obuf_*` | SRAM Read | Exposes the final Output Buffer (OBUF) containing the post-processed result matrix. |
 
 ---
 
@@ -47,9 +50,10 @@ Upgraded with AXI4-Stream interfaces and internal hardware skewing for zero-over
   <h2>Quick Start</h2>
 </div>
 
-1. Drive `s_axis_w` with `N` rows of weights. The internal FSM automatically loads them into the grid.
-2. Drive `s_axis_a` with `N` rows of activations. The hardware automatically skews the data and pushes it through the systolic array.
-3. Assert `tlast` on the final activation row. The FSM automatically flushes the pipeline and outputs the final `N x N` matrix via `m_axis_out`.
+1. Stream the model's weights and input activations into the `wbuf` and `ibuf` SRAM interfaces respectively.
+2. Push a sequence of commands (e.g. `OP_LOAD_WEIGHTS`, `OP_RUN_MAC`) into the `cmd_in` FIFO.
+3. The internal `layer_controller` automatically pulls the data, skews it, runs it through the systolic grid, and accumulates it.
+4. Read the resulting matrix directly from the `obuf_rd_data` interface!
 
 ---
 
@@ -57,11 +61,13 @@ Upgraded with AXI4-Stream interfaces and internal hardware skewing for zero-over
   <h2>Directory Structure</h2>
 </div>
 
-- `rtl/pe.v` : Processing Element (MAC + Weight Register).
-- `rtl/systolic_array.v` : Generates the NxN array of PEs.
-- `rtl/npu_defines.sv` : Parameterization macros and type definitions.
+- `rtl/npu_top.v` : The main subsystem wrapper (connects control, SRAMs, and systolic array).
+- `rtl/layer_controller.v` : Translates FIFO commands into exact cycle-level pipeline control.
+- `rtl/sram_buffers.v` : Synthesizable wrappers for IBUF, WBUF, and OBUF memories.
+- `rtl/accumulator_pbuf.v` : 32-bit partial sum accumulator for deep channel accumulation.
+- `rtl/activation_pool.v` & `rtl/max_pool_2x2.v` : Post-processing pipeline.
+- `rtl/systolic_array.v` & `rtl/pe.v` : The core matrix multiplication grid.
 - `rtl/skew_buffers.v` : Hardware input skewing and output unskewing pipeline.
-- `rtl/axis_npu.v` : The top module, containing the AXI4-Stream wrapper and state machine.
 - `tb/test_npu.py` : Comprehensive Cocotb UVM-like testbench.
 - `tb/Makefile` : Makefile to run the simulation (Verilator + Coverage enabled by default).
 
@@ -72,7 +78,7 @@ Upgraded with AXI4-Stream interfaces and internal hardware skewing for zero-over
 </div>
 
 The Cocotb testbench located at `tb/test_npu.py` is written as an all-in-one comprehensive verification suite:
-1. **UVM-like Architecture**: Separated into AXI4-Stream drivers, monitors, and a golden scoreboard.
+1. **UVM-like Architecture**: Separated into memory-mapped drivers, monitors, and a golden scoreboard.
 2. **Regression Suite**: Contains multiple tests that run automatically in sequence.
 3. **Directed Tests**: Tests `Identity`, `Zeros`, `Max Values`, and `Checkerboard` matrices to catch edge cases, in addition to purely random matrices.
 4. **Code Coverage**: The `Makefile` enables `verilator --coverage` to track line, toggle, and structural coverage in the RTL.
