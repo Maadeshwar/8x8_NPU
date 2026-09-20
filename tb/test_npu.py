@@ -153,3 +153,175 @@ async def test_checkerboard(dut):
     W = np.fromfunction(lambda i, j: (i + j) % 2, (N, N)).astype(np.int8) * 127
     A = np.fromfunction(lambda i, j: (i + j + 1) % 2, (N, N)).astype(np.int8) * 127
     await run_npu_test(dut, W, A)
+
+@cocotb.test()
+async def test_relu(dut):
+    N = int(dut.N.value)
+    # W = Identity
+    W = np.eye(N, dtype=np.int8)
+    # A has negatives and positives
+    A = np.random.randint(-128, 127, size=(N, N), dtype=np.int8)
+    
+    clock = Clock(dut.clk, 10, units='ns')
+    cocotb.start_soon(clock.start())
+    
+    driver = NpuDriver(dut, dut.clk)
+    await driver.reset()
+    
+    # Load Weights and Activations
+    for i in range(N):
+        row_data = W[N - 1 - i, :]
+        val = sum(((int(row_data[j]) & 0xFF) << (j * 8)) for j in range(N))
+        await driver.write_wbuf(i, val)
+
+    for i in range(N):
+        row_data = A[i, :]
+        val = sum(((int(row_data[j]) & 0xFF) << (j * 8)) for j in range(N))
+        await driver.write_ibuf(i, val)
+        
+    # Configure with ReLU
+    dut.quant_shift.value = 0
+    dut.relu_en.value = 1
+    dut.pool_en.value = 0
+    
+    await driver.push_cmd(OP_LOAD_WEIGHTS, N)
+    await driver.push_cmd(OP_SET_TILER, 0)
+    await driver.push_cmd(OP_RUN_MAC, (0 << 27) | (1 << 26) | N)
+    
+    for _ in range(50 + N * 3):
+        await RisingEdge(dut.clk)
+        
+    actual_out = np.zeros((N, N), dtype=np.int32)
+    for i in range(N):
+        out_val = await driver.read_obuf(i)
+        if out_val.is_resolvable:
+            out_int = int(out_val)
+            for j in range(N):
+                res = (out_int >> (j * 8)) & 0xFF
+                if res & 0x80: res -= 0x100
+                actual_out[i, j] = res
+
+    expected_out = np.dot(A.astype(np.int32), W.astype(np.int32))
+    expected_out = np.clip(expected_out, -128, 127)
+    expected_out = np.maximum(0, expected_out) # ReLU
+    
+    if np.array_equal(expected_out, actual_out):
+        cocotb.log.info('SCOREBOARD: PASS - ReLU output matches golden model.')
+    else:
+        cocotb.log.error(f'SCOREBOARD: FAIL - ReLU mismatch!\nExpected:\n{expected_out}\nActual:\n{actual_out}')
+        assert False, 'ReLU mismatch'
+
+def pool2d(A, kernel_size, stride):
+    output_shape = ((A.shape[0] - kernel_size)//stride + 1, (A.shape[1] - kernel_size)//stride + 1)
+    kernel_size = (kernel_size, kernel_size)
+    A_w = np.lib.stride_tricks.as_strided(A, shape=output_shape + kernel_size, strides=(stride*A.strides[0], stride*A.strides[1]) + A.strides)
+    A_w = A_w.reshape(-1, *kernel_size)
+    return A_w.max(axis=(1,2)).reshape(output_shape)
+
+@cocotb.test()
+async def test_max_pool(dut):
+    N = int(dut.N.value)
+    W = np.eye(N, dtype=np.int8)
+    A = np.random.randint(-128, 127, size=(N, N), dtype=np.int8)
+    
+    clock = Clock(dut.clk, 10, units='ns')
+    cocotb.start_soon(clock.start())
+    
+    driver = NpuDriver(dut, dut.clk)
+    await driver.reset()
+    
+    for i in range(N):
+        row_data = W[N - 1 - i, :]
+        val = sum(((int(row_data[j]) & 0xFF) << (j * 8)) for j in range(N))
+        await driver.write_wbuf(i, val)
+
+    for i in range(N):
+        row_data = A[i, :]
+        val = sum(((int(row_data[j]) & 0xFF) << (j * 8)) for j in range(N))
+        await driver.write_ibuf(i, val)
+        
+    dut.quant_shift.value = 0
+    dut.relu_en.value = 0
+    dut.pool_en.value = 1
+    
+    await driver.push_cmd(OP_LOAD_WEIGHTS, N)
+    await driver.push_cmd(OP_SET_TILER, 0)
+    await driver.push_cmd(OP_RUN_MAC, (0 << 27) | (1 << 26) | N)
+    
+    for _ in range(50 + N * 3):
+        await RisingEdge(dut.clk)
+        
+    actual_out = np.zeros((N//2, N//2), dtype=np.int32)
+    # Output is written to OBUF in N/2 consecutive addresses, each containing N/2 valid elements in the lower half
+    for i in range(N//2):
+        out_val = await driver.read_obuf(i)
+        if out_val.is_resolvable:
+            out_int = int(out_val)
+            for j in range(N//2):
+                res = (out_int >> (j * 8)) & 0xFF
+                if res & 0x80: res -= 0x100
+                actual_out[i, j] = res
+
+    expected_out = np.dot(A.astype(np.int32), W.astype(np.int32))
+    expected_out = np.clip(expected_out, -128, 127)
+    expected_out = pool2d(expected_out, 2, 2)
+    
+    if np.array_equal(expected_out, actual_out):
+        cocotb.log.info('SCOREBOARD: PASS - Max Pool output matches golden model.')
+    else:
+        cocotb.log.error(f'SCOREBOARD: FAIL - Max Pool mismatch!\nExpected:\n{expected_out}\nActual:\n{actual_out}')
+        assert False, 'Max Pool mismatch'
+
+@cocotb.test()
+async def test_quantize(dut):
+    N = int(dut.N.value)
+    # W = array of 2
+    W = np.eye(N, dtype=np.int8) * 2
+    A = np.random.randint(-50, 50, size=(N, N), dtype=np.int8)
+    
+    clock = Clock(dut.clk, 10, units='ns')
+    cocotb.start_soon(clock.start())
+    
+    driver = NpuDriver(dut, dut.clk)
+    await driver.reset()
+    
+    for i in range(N):
+        row_data = W[N - 1 - i, :]
+        val = sum(((int(row_data[j]) & 0xFF) << (j * 8)) for j in range(N))
+        await driver.write_wbuf(i, val)
+
+    for i in range(N):
+        row_data = A[i, :]
+        val = sum(((int(row_data[j]) & 0xFF) << (j * 8)) for j in range(N))
+        await driver.write_ibuf(i, val)
+        
+    dut.quant_shift.value = 1 # Shift right by 1 (divide by 2)
+    dut.relu_en.value = 0
+    dut.pool_en.value = 0
+    
+    await driver.push_cmd(OP_LOAD_WEIGHTS, N)
+    await driver.push_cmd(OP_SET_TILER, 0)
+    await driver.push_cmd(OP_RUN_MAC, (0 << 27) | (1 << 26) | N)
+    
+    for _ in range(50 + N * 3):
+        await RisingEdge(dut.clk)
+        
+    actual_out = np.zeros((N, N), dtype=np.int32)
+    for i in range(N):
+        out_val = await driver.read_obuf(i)
+        if out_val.is_resolvable:
+            out_int = int(out_val)
+            for j in range(N):
+                res = (out_int >> (j * 8)) & 0xFF
+                if res & 0x80: res -= 0x100
+                actual_out[i, j] = res
+
+    expected_out = np.dot(A.astype(np.int32), W.astype(np.int32))
+    expected_out = np.right_shift(expected_out, 1)
+    expected_out = np.clip(expected_out, -128, 127)
+    
+    if np.array_equal(expected_out, actual_out):
+        cocotb.log.info('SCOREBOARD: PASS - Quantization output matches golden model.')
+    else:
+        cocotb.log.error(f'SCOREBOARD: FAIL - Quantization mismatch!\nExpected:\n{expected_out}\nActual:\n{actual_out}')
+        assert False, 'Quantization mismatch'
