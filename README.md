@@ -1,9 +1,8 @@
-﻿<h1 align="center">Configurable Neural Processing Unit (NPU) IP</h1>
+﻿<h1 align="center">Configurable Neural Processing Unit (NPU)</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Language-Verilog_2001-007ACC?style=for-the-badge" alt="Verilog">
   <img src="https://img.shields.io/badge/Architecture-Systolic_Array-FF3366?style=for-the-badge" alt="Architecture">
-  <img src="https://img.shields.io/badge/Control-3_Stage_FSM-FF9900?style=for-the-badge" alt="FSM">
   <img src="https://img.shields.io/badge/Integration-Memory_Mapped-9C27B0?style=for-the-badge" alt="Memory Mapped">
   <img src="https://img.shields.io/badge/Verification-Cocotb_%26_Verilator-4B32C3?style=for-the-badge" alt="Verification">
   <img src="https://img.shields.io/badge/Status-Production_Grade-00C853?style=for-the-badge" alt="Status">
@@ -13,7 +12,7 @@
 
 <h2 align="center">Architectural Overview</h2>
 
-This repository contains a high-performance, fully parameterized, production-grade Neural Processing Unit (NPU) Intellectual Property (IP) block. The architecture is engineered around a highly scalable NxN Systolic Array capable of natively executing complete Convolutional Neural Network (CNN) layers, including matrix multiplication, bias addition, non-linear activation, and spatial downsampling, entirely in a single hardware pass.
+This repository contains a high-performance, fully parameterized, production-grade Neural Processing Unit (NPU). The architecture is engineered around a highly scalable NxN Systolic Array capable of natively executing complete Convolutional Neural Network (CNN) layers, including matrix multiplication, bias addition, non-linear activation, and spatial downsampling, entirely in a single hardware pass.
 
 Designed for seamless System-on-Chip (SoC) integration, the NPU completely abstracts the complex timing constraints of systolic data skewing and unskewing behind a localized, autonomous controller and standard memory-mapped SRAM interfaces.
 
@@ -23,7 +22,7 @@ Designed for seamless System-on-Chip (SoC) integration, the NPU completely abstr
 
 <h3 align="center">1. Parameterized Systolic Math Engine</h3>
 The mathematical core of the NPU is a highly optimized, output-stationary Systolic Array. 
-* **Universal Scalability:** The array size is driven by a top-level parameter N. Instantiating the IP as a lightweight 8x8 edge accelerator or a massive 32x32 datacenter engine requires zero code rewrites. 
+* **Universal Scalability:** The array size is driven by a top-level parameter N. Instantiating the module as a lightweight 8x8 edge accelerator or a massive 32x32 datacenter engine requires zero code rewrites. 
 * **Data Width Flexibility:** Features configurable DATA_WIDTH (default 8-bit integer) and ACC_WIDTH (default 32-bit internal accumulator) for precision control during inference.
 
 <h3 align="center">2. The 3-Stage FSM Layer Controller</h3>
