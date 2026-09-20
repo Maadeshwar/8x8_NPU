@@ -1,7 +1,7 @@
 `default_nettype none
 
 module activation_pool #(
-    parameter N = 16,
+    parameter N = 8,
     parameter DATA_WIDTH = 8,
     parameter ACC_WIDTH = 32
 )(

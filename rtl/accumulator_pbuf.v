@@ -2,7 +2,7 @@
 `default_nettype none
 
 module accumulator_pbuf #(
-    parameter N = 16,
+    parameter N = 8,
     parameter ACC_WIDTH = 32,
     parameter PBUF_DEPTH = 1024
 )(

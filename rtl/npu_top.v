@@ -3,7 +3,7 @@
 `default_nettype none
 
 module npu_top #(
-    parameter N = 16,
+    parameter N = 8,
     parameter DATA_WIDTH = 8,
     parameter ACC_WIDTH = 32,
     parameter FIFO_DEPTH_LOG2 = 4,

@@ -1,7 +1,7 @@
 `default_nettype none
 
 module max_pool_2x2 #(
-    parameter N = 16,        // Must be even. e.g., 16 input elements
+    parameter N = 8,        // Must be even. e.g., 8 input elements
     parameter DATA_WIDTH = 8
 )(
     input  wire clk,
